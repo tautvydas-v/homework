@@ -9,12 +9,21 @@ To start the analysis, a pipeline has to be created to extract, ingest, prepare 
 - POSIX-compliant Operatin System. More information can be found here: https://airflow.apache.org/docs/apache-airflow/stable/installation/prerequisites.html.
 
 # Setup
-First of all, clone this repostitory to any folder. Later on, these files will be moved to new 'airflow' folder, which will be created after package installation. 
+First, clone this repostitory to any folder. Later on, these files will be moved to new 'airflow' folder, which will be created after package installation. To clone this repository, run "git clone https://github.com/tautvydas-v/homework.git".
 
 After Python installation, it's advised to create a virtual environment so that each project's modules could be handled separately and there would be no conflict between the modules. 
 - To create a virtual environment, open a terminal (run "python3 --version" just to make sure that Python is installed), navigate to your preferred folder and run "python3 -m venv venv". 
-- After environment is created, run "source venv/bin/activate/" to activate the virtual environment. Before installing any modules, run 'pip install --upgrade pip'.
+- After environment is created, run "source venv/bin/activate/" to activate the virtual environment. Before installing any modules, run "pip install --upgrade pip".
+- Navigate in terminal to the cloned repository's "Requirements" folder and run "pip install -r requirements.txt".
+
+Airflow setup:
+Since this Airflow will be hosted and run locally, setup for Airflow will be kept to a minimum. It will be sufficient to run the pipelines completely. Note: this setup should not be used for production environment and production deployments as it's not 
+
+- Make sure virtual environment is activated and requirements.txt is installed. Navigate to any folder you prefer and run "airflow db init". Airflow folder will be created.
+- Before starting anything else, go inside 'airflow.cfg' file, find 'load_examples' and change value to False.
 - 
+
+
 
 
 
