@@ -5,6 +5,10 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 from airflow.models import Variable
 
 from datetime import datetime, timedelta
+import os 
+
+# Local machine throws "Negsignal.SIGSEGV" error if this isn't specified. 
+os.environ["no_proxy"]="*"
 
 
 class ExtractDataFromGoogleTrends(BaseOperator):
@@ -54,7 +58,7 @@ class ExtractDataFromGoogleTrends(BaseOperator):
         pytrend = TrendReq()
         
         pytrend.build_payload(kw_list=self.kw_list,
-                              timeframe=f"{self.extract_start} {self.extract_end}", geo='lt')
+                            timeframe=f"{self.extract_start} {self.extract_end}")
         
         df = pytrend.interest_by_region(inc_low_vol=True)
         self.log.info('Data has been fetched from Google Trends.')
@@ -64,9 +68,9 @@ class ExtractDataFromGoogleTrends(BaseOperator):
         df['geoName'] = df['geoName'].astype('str')
         df['start_date'] = datetime.strptime(self.extract_start, '%Y-%m-%d').date()
         df['end_date'] = datetime.strptime(self.extract_end, '%Y-%m-%d').date()
-        df['batch_date'] = datetime.today()
+        df['batch_date'] = datetime.today().date()
 
-        bq_hook = BigQueryHook(gcp_conn_id='gcp_conn_id', use_legacy_sql=False).get_client()
+        bq_hook = BigQueryHook(gcp_conn_id='google_cloud_default', use_legacy_sql=False).get_client()
 
         try:
             bq_hook.get_table(f'{self.project_id}.{self.dataset}.{self.table_name}')
@@ -150,31 +154,9 @@ def create_dag(
             doc_md='''Extract Google Trends data and upload it to "raw" table inside BigQuery.'''
         )
 
-        CheckDuplicates = BigQueryCheckOperator(
-            task_id='check_duplicates',
-            gcp_conn_id='gcp_conn_id',
-            sql=f'''SELECT 
-                        COUNT(*) = 0
-                    FROM (
-                        SELECT 
-                            geoName,
-                            start_date,
-                            end_date,
-                            count(*)
-                        FROM 
-                            {Variable.get('project_id')}.{Variable.get('dataset')}.{Variable.get('raw_table')}
-                        GROUP BY
-                            geoName,
-                            start_date,
-                            end_date
-                        HAVING COUNT(*) > 1);''',
-            use_legacy_sql=False,
-            doc_md='Validation if there are no duplicates in the raw data set, based on country, start_date and end_date'
-        )
-
         PrepareData = BigQueryInsertJobOperator(
             task_id='prepare_data',
-            gcp_conn_id='gcp_conn_id',
+            gcp_conn_id='google_cloud_default',
             configuration={
                 'query' : {
                     'query' : '{% include "templates/clean_transpose_data.sql" %}',
@@ -193,7 +175,7 @@ def create_dag(
 
         TransformData = BigQueryInsertJobOperator(
             task_id='transform_data',
-            gcp_conn_id='gcp_conn_id',
+            gcp_conn_id='google_cloud_default',
             configuration={
                 'query' : {
                     'query' : '{% include "templates/transformed_data.sql" %}',
@@ -209,7 +191,79 @@ def create_dag(
             doc_md='Calculates ranking for each search term based on search term interest and inserts data into "final" table.'
         )
 
-        ExtractGoogleTrendsData >> CheckDuplicates >> PrepareData >> TransformData
+        CheckRawDuplicates = BigQueryCheckOperator(
+            task_id='check_raw_table_duplicates',
+            gcp_conn_id='google_cloud_default',
+            sql=f'''SELECT 
+                        COUNT(*) = 0
+                    FROM (
+                        SELECT 
+                            geoName,
+                            start_date,
+                            end_date,
+                            count(*)
+                        FROM 
+                            {Variable.get('project_id')}.{Variable.get('dataset')}.{Variable.get('raw_table')}
+                        GROUP BY
+                            geoName,
+                            start_date,
+                            end_date
+                        HAVING COUNT(*) > 1);''',
+            use_legacy_sql=False,
+            doc_md='Validation if there are no duplicates in the raw data set, based on geoName, start_date and end_date'
+        )
+
+        CheckStagingDuplicates = BigQueryCheckOperator(
+            task_id='check_staging_table_duplicates',
+            gcp_conn_id='google_cloud_default',
+            sql=f'''SELECT 
+                        COUNT(*) = 0
+                    FROM (
+                        SELECT 
+                            country,
+                            search_term,
+                            start_date,
+                            end_date,
+                            count(*)
+                        FROM 
+                            {Variable.get('project_id')}.{Variable.get('dataset')}.{Variable.get('staging_table')}
+                        GROUP BY
+                            country,
+                            search_term,
+                            start_date,
+                            end_date
+                        HAVING COUNT(*) > 1);''',
+            use_legacy_sql=False,
+            doc_md='Validation if there are no duplicates in the staging data set, based on country, search_term, start_date and end_date'
+        )
+
+        CheckTransformedDuplicates = BigQueryCheckOperator(
+            task_id='check_transformed_tableduplicates',
+            gcp_conn_id='google_cloud_default',
+            sql=f'''SELECT 
+                        COUNT(*) = 0
+                    FROM (
+                        SELECT 
+                            country,
+                            search_term,
+                            start_date,
+                            end_date,
+                            rank,
+                            count(*)
+                        FROM 
+                            {Variable.get('project_id')}.{Variable.get('dataset')}.{Variable.get('final_table')}
+                        GROUP BY
+                            country,
+                            search_term,
+                            start_date,
+                            end_date,
+                            rank
+                        HAVING COUNT(*) > 1);''',
+            use_legacy_sql=False,
+            doc_md='Validation if there are no duplicates in the transformed data set, based on country, start_date and end_date'
+        )
+
+        ExtractGoogleTrendsData >> PrepareData >> TransformData >> [CheckRawDuplicates, CheckStagingDuplicates, CheckTransformedDuplicates]
     
     return dag
 
