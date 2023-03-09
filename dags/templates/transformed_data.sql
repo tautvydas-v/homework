@@ -26,7 +26,7 @@ SELECT
 FROM 
   {{ params.project_id }}.{{ params.dataset }}.{{ params.staging_table }}
 ),
-revert_vpn_name AS (
+rankings AS (
 SELECT 
   country,
   search_term,
@@ -45,7 +45,7 @@ SELECT
   cn.end_date,
   ROW_NUMBER() OVER(PARTITION BY cn.country, cn.start_date, cn.end_date ORDER BY cn.search_term_interest DESC, cn.search_term) AS rank
 FROM 
-  revert_vpn_name AS cn
+  rankings AS cn
 LEFT JOIN 
   {{ params.project_id }}.{{ params.dataset }}.{{ params.final_table }} AS fin 
 ON cn.country = fin.country
