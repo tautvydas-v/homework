@@ -37,7 +37,9 @@ Once done, click 'Save'.
   - raw_table : tv_raw_google_trends
   - staging_table : tv_staging_google_trends
   - final_table : tv_final_transformed_google_trends
-  To run a fresh pipeline, use valid "project_id" and "dataset" which can be accessed with the provided credentials and also setup "raw_table", "staging_table" and "final_table" as needed.
+    
+    To run a fresh pipeline, use valid "project_id" and "dataset" which can be accessed with the provided credentials and also setup "raw_table",       "staging_table" and "final_table" as needed.
+ 
 8. Copy from the cloned repository's 'dags' folder into 'airflow' folder. It will include both the DAG and SQL templates. 
 
 
