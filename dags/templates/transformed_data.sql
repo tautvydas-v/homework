@@ -29,7 +29,7 @@ FROM
 rankings AS (
 SELECT 
   country,
-  search_term,
+  REPLACE(search_term, '~~~~||vpn', 'vpn') AS search_term,
   search_term_interest,
   start_date,
   end_date,
@@ -39,11 +39,11 @@ FROM
 )
 SELECT 
   cn.country,
-  REPLACE(cn.search_term, '~~~~||vpn', 'vpn') AS search_term,
+  cn.search_term,
   cn.search_term_interest,
   cn.start_date,
   cn.end_date,
-  ROW_NUMBER() OVER(PARTITION BY cn.country, cn.start_date, cn.end_date ORDER BY cn.search_term_interest DESC, cn.search_term) AS rank
+  cn.rank
 FROM 
   rankings AS cn
 LEFT JOIN 
