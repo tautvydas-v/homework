@@ -5,9 +5,7 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 from airflow.models import Variable
 
 from datetime import datetime, timedelta
-import os
 
-os.environ["no_proxy"]="*"
 
 class ExtractDataFromGoogleTrends(BaseOperator):
     '''
@@ -179,7 +177,7 @@ def create_dag(
             gcp_conn_id='gcp_conn_id',
             configuration={
                 'query' : {
-                    'query' : '{% include "include/sql/clean_transpose_data.sql" %}',
+                    'query' : '{% include "templates/clean_transpose_data.sql" %}',
                     'useLegacySql' : False
                 }
             },
@@ -198,7 +196,7 @@ def create_dag(
             gcp_conn_id='gcp_conn_id',
             configuration={
                 'query' : {
-                    'query' : '{% include "include/sql/transformed_data.sql" %}',
+                    'query' : '{% include "templates/transformed_data.sql" %}',
                     'useLegacySql' : False
                 }
             },
