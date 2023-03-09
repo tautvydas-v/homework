@@ -41,8 +41,17 @@ Once done, click 'Save'.
     To run a fresh pipeline, use valid "project_id" and "dataset" which can be accessed with the Google Cloud credentials and also setup "raw_table",       "staging_table" and "final_table" as needed.
 8. Copy from the cloned repository's 'dags' folder into 'airflow' folder. It will include both the DAG and SQL templates. Once DAGs are parsed, there should be two DAGs - "google_trends_weekly_dag" and "google_trends_backfill_dag". Weekly DAG runs on Weekly basis, starting from 2023-02-26. Backfill DAG runs also on weekly basis, but starting 2020-01-01. DAG can be manually triggered, providing start and end dates (more information in the code).
 
-#
-
+# Code overview and related notes
+There are six tasks in total in the pipeline. 
+- The first task is called "extract_google_trends_data" which connects to Google Trends via pytrends API, extracts data into a dataframe and uploads this dataframe into a "raw" table in BigQuery. If no table exists in BigQuery, it is created, otherwise - this method is skipped.
+- Second task is called "prepare_data" which runs based off SQL template. It creates a new "staging" table if it does not exists, deduplicates data, changes the structure of a table and insert idempotently data into "staging" table.
+- Third task is called "transform_data". Also created a new "final" tablie if it does not exists, does ranking calculations and insert idempotently data into "final" table.
+- Fourth, fifth and sixth tasks are checking for duplicates in each "raw", "staging" and "final" tables. Ideally, these tasks should be done after each ingestion / transformation step, but these tasks represent more the tests that we could do in the database to make sure we have no duplicates, and if we did - add in additional tasks to manage them. This is why we have idempotency for "staging" and "final" tables so that the final results would not be skewed or wouldn't make sense. Idempotency could also be applied for data ingestion, but in this case decision was made not to do it because:
+  1. We could clean up data by selecting the same "raw" data from BigQuery and make it as a dataframe and compare it by country, start and end dates with the extracted dataframe, but this isn't good practise as we want to avoid running tasks in the Airflow itself so as not to run out of memory and kill the pipeline. 
+  2. Another solution would be to export this dataframe to CSV, Parquet or any other format and store it somewhere, ideally in Cloud Storage and then use it for more convenient data ingestion. Since for this solution this is not an option, decision was made to avoid storing files locally and instead ingest it directly.
+Additional tests could be created such as to check whether the search term percentage for all terms combined is equals to 100 (more or less would indicate an error), also check if the search term percentage is not equals to 0 which would indicate that the data is not useful for analysis and tweaking in the code must be done.
+- Code integrity could be checked when running CI/CD pipelines, for example check whether there are no import errors in the code before deploying.
+- Monitoring could be done using Email operator, where an email would be sent if the code fails, or additionally - email could be sent after a successful run. If everything is in cloud, additional monitoring tools could be used to monitor Airflow and BigQuery instances, whether they are not being overloaded and additional scaling is not needed.
 
 
 
