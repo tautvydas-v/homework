@@ -29,7 +29,7 @@ FROM
 revert_vpn_name AS (
 SELECT 
   country,
-  REPLACE(search_term, '~~~~||vpn', 'vpn') AS search_term,
+  search_term,
   search_term_interest,
   start_date,
   end_date,
@@ -39,7 +39,7 @@ FROM
 )
 SELECT 
   cn.country,
-  cn.search_term,
+  REPLACE(cn.search_term, '~~~~||vpn', 'vpn') AS search_term,
   cn.search_term_interest,
   cn.start_date,
   cn.end_date,
