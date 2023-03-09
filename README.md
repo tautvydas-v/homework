@@ -9,7 +9,12 @@ To start the analysis, a pipeline has to be created to extract, ingest, prepare 
 - POSIX-compliant Operatin System. More information can be found here: https://airflow.apache.org/docs/apache-airflow/stable/installation/prerequisites.html.
 
 # Setup
-After Python installation, it's advised to create a virtual environment so that each project's modules could be handled separately and there would be no conflict between the modules. To create a virtual environment, open a terminal (run "python3 --version" just to make sure that Python is installed), navigate to your preferred folder and run "python3 -m venv venv". After environment is created, run "source venv/bin/activate/" to activate the virtual environment.
+First of all, clone this repostitory to any folder. Later on, these files will be moved to new 'airflow' folder, which will be created after package installation. 
+
+After Python installation, it's advised to create a virtual environment so that each project's modules could be handled separately and there would be no conflict between the modules. 
+- To create a virtual environment, open a terminal (run "python3 --version" just to make sure that Python is installed), navigate to your preferred folder and run "python3 -m venv venv". 
+- After environment is created, run "source venv/bin/activate/" to activate the virtual environment. Before installing any modules, run 'pip install --upgrade pip'.
+- 
 
 
 
